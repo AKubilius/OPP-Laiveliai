@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RsignalTest", "RsignalTest\RsignalTest.csproj", "{5B98D32A-8D94-4020-8A3B-E04B28311E2D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{56F2391E-08DC-471C-AEDE-A4C1158B14DC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5B98D32A-8D94-4020-8A3B-E04B28311E2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B98D32A-8D94-4020-8A3B-E04B28311E2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5B98D32A-8D94-4020-8A3B-E04B28311E2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5B98D32A-8D94-4020-8A3B-E04B28311E2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56F2391E-08DC-471C-AEDE-A4C1158B14DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56F2391E-08DC-471C-AEDE-A4C1158B14DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56F2391E-08DC-471C-AEDE-A4C1158B14DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56F2391E-08DC-471C-AEDE-A4C1158B14DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
