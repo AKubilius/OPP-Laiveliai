@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Server.Models;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace Server.Hubs
 {
@@ -16,22 +18,54 @@ namespace Server.Hubs
 
         public async void RegisterPlayer(string name)
         {
+            bool isSuccesful = false;
             lock (_lockerRegisteredPlayers)
             {
                 var player = _registeredPlayers.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
+
                 if (player == null)
                 {
-                    player = new Player { ConnectionId = Context.ConnectionId, Name = name };
-                    _registeredPlayers.Add(player);
+                    Player temp = _registeredPlayers.FirstOrDefault(x => x.Name.Equals(name));
+                    if (temp == null)
+                    {
+                        player = new Player { ConnectionId = Context.ConnectionId, Name = name };
+                        _registeredPlayers.Add(player);
+                        isSuccesful = true;
+                    }
                 }
             }
 
-            await Clients.Client(Context.ConnectionId).SendAsync("RegisterComplete");
+            if (isSuccesful)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("RegisterComplete");
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("NameOccupied");
+            }
+
         }
 
-        public async void SendLocation()
+        public async void SendLocation(int matchId, string playerName, string facing, int xAxis, int yAxis)
         {
-
+            Match match = null;
+            lock (_lockerMatches)
+            {
+               
+                foreach(Match m in _matches)
+                {
+                    foreach(Player p in m.Players)
+                    {
+                        if (p.Name.Equals(playerName))
+                        {
+                            match = m;
+                            break;
+                        }
+                    }
+                }
+            }
+            Player opponent = match.Players.First(x => x.Name != playerName);
+            await Clients.Client(opponent.ConnectionId).SendAsync("LocationInfo", playerName, facing, xAxis, yAxis);
         }
 
         public async void FindOpponent()
@@ -56,7 +90,6 @@ namespace Server.Hubs
             player.Opponent = opponent;
             opponent.Opponent = player;
 
-
             lock(_lockerMatchmaking)
             {
                 _playersInMatchmaking.Remove(opponent);
@@ -65,8 +98,8 @@ namespace Server.Hubs
 
             await Clients.Client(player.ConnectionId).SendAsync("FoundOpponent", opponent.Name);
             await Clients.Client(opponent.ConnectionId).SendAsync("FoundOpponent", player.Name);
-
-            var match = new Match { Player1 = player, Player2 = opponent, MatchId = 1};
+            
+            var match = new Match { Players = new List<Player> { player, opponent }, MatchId = DateTime.UtcNow.GetHashCode()};
 
             lock (_lockerMatches)
             {
@@ -76,9 +109,6 @@ namespace Server.Hubs
             await Clients.Client(player.ConnectionId).SendAsync("MatchCreated", match.MatchId);
             await Clients.Client(opponent.ConnectionId).SendAsync("MatchCreated", match.MatchId);
 
-
-
-            //start match by sending players info and more stuf (set player coordinates etc)
         }
     }
 }
