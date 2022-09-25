@@ -1,11 +1,9 @@
 ﻿namespace Server.Models
 {
-    public class PLayer
+    public class Player
     {
         public string Name { get; set; }
-        public PLayer Opponent { get; set; }
-        public bool IsPlaying { get; set; }
-        public bool LookingForOpponent { get; set; }
+        public Player Opponent { get; set; }
         public string ConnectionId { get; set; }
     }
 }

@@ -5,64 +5,80 @@ namespace Server.Hubs
 {
     public class Game : Hub
     {
-        private static List<PLayer> _players = new List<PLayer>();
-        private static List<Match> _mathces = new List<Match>();
+        private static List<Player> _registeredPlayers = new List<Player>();
+        private static List<Match> _matches = new List<Match>();
+        private static List<Player> _playersInMatchmaking = new List<Player>();
 
-        private object _locker = new object();
+        private object _lockerRegisteredPlayers = new object();
+        private object _lockerMatchmaking = new object();
+        private object _lockerMatches = new object();
+
+
         public async void RegisterPlayer(string name)
         {
-            lock (_locker)
+            lock (_lockerRegisteredPlayers)
             {
-                var player = _players.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
+                var player = _registeredPlayers.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
                 if (player == null)
                 {
-                    player = new PLayer { ConnectionId = Context.ConnectionId, Name = name };
-                    _players.Add(player);
+                    player = new Player { ConnectionId = Context.ConnectionId, Name = name };
+                    _registeredPlayers.Add(player);
                 }
-
-                player.IsPlaying = false;
             }
 
             await Clients.Client(Context.ConnectionId).SendAsync("RegisterComplete");
         }
 
+        public async void SendLocation()
+        {
+
+        }
+
         public async void FindOpponent()
         {
-            var player = _players.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
+            var player = _registeredPlayers.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
             if (player == null) return;
 
-            player.LookingForOpponent = true;
+            // player.LookingForOpponent = true;
+            Player opponent = null;
+            lock (_lockerMatchmaking)
+            {
+                _playersInMatchmaking.Add(player);
+                opponent = _playersInMatchmaking.FirstOrDefault(x => x.ConnectionId != player.ConnectionId);
+            }
 
-            var opponent = _players.FirstOrDefault(x => x.ConnectionId != player.ConnectionId && x.LookingForOpponent && !x.IsPlaying);
             if (opponent == null)
             {
                 await Clients.Client(player.ConnectionId).SendAsync("NoOpponents");
                 return;
             }
 
-            PlayerIsPlaying(player);
-            PlayerIsPlaying(opponent);
-
             player.Opponent = opponent;
             opponent.Opponent = player;
+
+
+            lock(_lockerMatchmaking)
+            {
+                _playersInMatchmaking.Remove(opponent);
+                _playersInMatchmaking.Remove(player);
+            }
 
             await Clients.Client(player.ConnectionId).SendAsync("FoundOpponent", opponent.Name);
             await Clients.Client(opponent.ConnectionId).SendAsync("FoundOpponent", player.Name);
 
-            var match = new Match { Player1 = player, Player2 = opponent };
+            var match = new Match { Player1 = player, Player2 = opponent, MatchId = 1};
 
-            lock (_locker)
+            lock (_lockerMatches)
             {
-                _mathces.Add(match);
+                _matches.Add(match);
             }
 
-            //start match by sending players info and more stuf (set player coordinates etc)
-        }
+            await Clients.Client(player.ConnectionId).SendAsync("MatchCreated", match.MatchId);
+            await Clients.Client(opponent.ConnectionId).SendAsync("MatchCreated", match.MatchId);
 
-        private static void PlayerIsPlaying(PLayer player)
-        {
-            player.IsPlaying = true;
-            player.LookingForOpponent = false;
+
+
+            //start match by sending players info and more stuf (set player coordinates etc)
         }
     }
 }

@@ -2,7 +2,8 @@
 {
     public class Match
     {
-        public PLayer Player1 { get; set; }
-        public PLayer Player2 { get; set; }
+        public Player Player1 { get; set; }
+        public Player Player2 { get; set; }
+        public int MatchId { get; set; }
     }
 }
