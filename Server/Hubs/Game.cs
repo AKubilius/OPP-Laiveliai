@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Server.Models;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Numerics;
 
 namespace Server.Hubs
@@ -46,6 +47,46 @@ namespace Server.Hubs
 
         }
 
+        public void LogoutPlayer()
+        {
+            lock (_lockerRegisteredPlayers)
+            {
+                var player = _registeredPlayers.First(x => x.ConnectionId == Context.ConnectionId);
+
+                if (player != null)
+                {
+                    lock (_lockerMatchmaking)
+                    {
+                        _playersInMatchmaking.Remove(player);
+                    }
+                    _registeredPlayers.Remove(player);
+                }
+            }
+        }
+
+        public async void LeftMatch()
+        {
+            Match match = null;
+            lock (_matches)
+            {
+                match = _matches.First(x => x.Players.Any(y => y.ConnectionId == Context.ConnectionId));
+
+                if (match != null)
+                {
+                    _matches.Remove(match);
+                }
+            }
+
+            if(match != null)
+            {
+                foreach (Player player in match.Players)
+                {
+                    if(player.ConnectionId != Context.ConnectionId)
+                        await Clients.Client(player.ConnectionId).SendAsync("LeaveMatch");
+                }
+            }
+        }
+
         public async void SendLocation(int matchId, string playerName, string facing, int xAxis, int yAxis)
         {
             Match match = null;
@@ -65,7 +106,8 @@ namespace Server.Hubs
                 }
             }
             Player opponent = match.Players.First(x => x.Name != playerName);
-            await Clients.Client(opponent.ConnectionId).SendAsync("LocationInfo", playerName, facing, xAxis, yAxis);
+            if(opponent != null)
+                await Clients.Client(opponent.ConnectionId).SendAsync("LocationInfo", playerName, facing, xAxis, yAxis);
         }
 
         public async void FindOpponent()
@@ -83,7 +125,7 @@ namespace Server.Hubs
 
             if (opponent == null)
             {
-                await Clients.Client(player.ConnectionId).SendAsync("NoOpponents");
+                await Clients.Client(player.ConnectionId).SendAsync("InMatchmakingQueue");
                 return;
             }
 
