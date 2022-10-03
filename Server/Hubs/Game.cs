@@ -11,6 +11,7 @@ namespace Server.Hubs
         private static List<Player> _registeredPlayers = new List<Player>();
         private static List<Match> _matches = new List<Match>();
         private static List<Player> _playersInMatchmaking = new List<Player>();
+        static private Random random = new Random();
 
         private object _lockerRegisteredPlayers = new object();
         private object _lockerMatchmaking = new object();
@@ -105,8 +106,10 @@ namespace Server.Hubs
                     }
                 }
             }
-            Player opponent = match.Players.First(x => x.Name != playerName);
-            if(opponent != null)
+            Player opponent = null;
+            if (match != null)
+                opponent = match.Players.First(x => x.Name != playerName);
+            if (opponent != null)
                 await Clients.Client(opponent.ConnectionId).SendAsync("LocationInfo", playerName, facing, xAxis, yAxis);
         }
 
@@ -140,7 +143,7 @@ namespace Server.Hubs
 
             await Clients.Client(player.ConnectionId).SendAsync("FoundOpponent", opponent.Name);
             await Clients.Client(opponent.ConnectionId).SendAsync("FoundOpponent", player.Name);
-            
+
             var match = new Match { Players = new List<Player> { player, opponent }, MatchId = DateTime.UtcNow.GetHashCode()};
 
             lock (_lockerMatches)
@@ -148,8 +151,8 @@ namespace Server.Hubs
                 _matches.Add(match);
             }
 
-            await Clients.Client(player.ConnectionId).SendAsync("MatchCreated", match.MatchId);
-            await Clients.Client(opponent.ConnectionId).SendAsync("MatchCreated", match.MatchId);
+            await Clients.Client(player.ConnectionId).SendAsync("MatchCreated", match.MatchId, 0, random.Next(0,60));
+            await Clients.Client(opponent.ConnectionId).SendAsync("MatchCreated", match.MatchId, 1, random.Next(0, 600));
 
         }
     }
