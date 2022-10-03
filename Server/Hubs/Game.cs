@@ -112,6 +112,30 @@ namespace Server.Hubs
             if (opponent != null)
                 await Clients.Client(opponent.ConnectionId).SendAsync("LocationInfo", playerName, facing, xAxis, yAxis);
         }
+        public async void SendBulletLocation(int matchId, string playerName, int bulletId, int xAxis, int yAxis)
+        {
+            Match match = null;
+            lock (_lockerMatches)
+            {
+
+                foreach (Match m in _matches)
+                {
+                    foreach (Player p in m.Players)
+                    {
+                        if (p.Name.Equals(playerName))
+                        {
+                            match = m;
+                            break;
+                        }
+                    }
+                }
+            }
+            Player opponent = null;
+            if (match != null)
+                opponent = match.Players.First(x => x.Name != playerName);
+            if (opponent != null)
+                await Clients.Client(opponent.ConnectionId).SendAsync("BulletLocationInfo", bulletId, xAxis, yAxis);
+        }
 
         public async void FindOpponent()
         {
